@@ -1,11 +1,13 @@
 import numpy as np
 
+
 def RMSE(y, _y):
     """
     root mean squared error
     :return:
     """
-    pass
+    return np.sqrt(((y - _y) ** 2).mean())
+
 
 def MAE(y, _y):
     """
@@ -14,17 +16,21 @@ def MAE(y, _y):
     """
     pass
 
+
 def MRE(y, _y):
     """
     mean relative error
     :return:
     """
 
+
 def SE():
     """
     standard error
     :return:
     """
+
+
 def R2():
     """
     coeficiente de determniação R2
@@ -33,5 +39,3 @@ def R2():
     :return:
     """
     pass
-
-
