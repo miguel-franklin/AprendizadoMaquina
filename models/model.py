@@ -11,3 +11,11 @@ class Model(metaclass=abc.ABCMeta):
     @abstractmethod
     def predict(self, x, weights):
         pass
+
+    @abstractmethod
+    def predict_train(self, x, weights):
+        pass
+
+    @abstractmethod
+    def initial_weights(self, x):
+        pass

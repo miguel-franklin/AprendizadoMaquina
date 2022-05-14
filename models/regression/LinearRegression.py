@@ -1,5 +1,5 @@
 import numpy as np
-from Models import model
+from models import model
 
 
 class LinearRegression(model.Model):
@@ -20,3 +20,7 @@ class LinearRegression(model.Model):
 
     def OLS(self, y):
         return ((np.linalg.invp(self.x.T @ self.x) @ self.x.T) @ y).T
+
+    @property
+    def weights(self):
+        return None
