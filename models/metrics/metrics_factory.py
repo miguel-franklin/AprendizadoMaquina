@@ -87,3 +87,4 @@ def plot_results(figure_title, results):
             ylim=None,
         )
     fig.suptitle(figure_title)
+
