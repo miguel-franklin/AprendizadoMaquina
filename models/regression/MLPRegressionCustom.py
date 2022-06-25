@@ -70,17 +70,17 @@ class MLP:
 
         for n in range(self.niterations):
 
-            # if X_test is not None:
-            #     _y_test = self.predict(X_test)
-            #     if self.metric is None:
-            #         error_valid = 0.5 * np.sum((y_test - _y_test) ** 2)  # TODO Função custo
-            #     elif self.outtype in ["logistic", "softmax"]:
-            #         y1 = self.encoder.inverse_transform(y_test)
-            #         y2 = self.encoder.inverse_transform(_y_test)
-            #         error_valid = self.metric.measure(y1, y2)
-            #     else:
-            #         error_valid = self.metric.measure(y_test, _y_test)
-            #     self.errors_valid.append(error_valid)
+            if X_test is not None:
+                _y_test = self.predict(X_test)
+                if self.metric is None:
+                    error_valid = 0.5 * np.sum((y_test - _y_test) ** 2)  # TODO Função custo
+                elif self.outtype in ["logistic", "softmax"]:
+                    y1 = self.encoder.inverse_transform(y_test)
+                    y2 = self.encoder.inverse_transform(_y_test)
+                    error_valid = self.metric.measure(y1, y2)
+                else:
+                    error_valid = self.metric.measure(y_test, _y_test)
+                self.errors_valid.append(error_valid)
 
             self.y = self.predict(X)
 

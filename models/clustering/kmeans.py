@@ -1,87 +1,106 @@
+import matplotlib.pyplot as plt
 import numpy as np
-import abc
-from abc import abstractmethod
-from models.metrics.metrics_factory import get_classification_metrics
-from models.normalization import MinMaxScaler
 
-from models import model
+from models.clustering.distances import Euclidean, Mahalanobis
+
+np.random.seed(42)
 
 
-class Distance(metaclass=abc.ABCMeta):
+class KMeans:
+    def __init__(self, K=5, max_iters=100, plot_steps=False, distance='euclidean'):
+        self.K = K
+        self.max_iters = max_iters
+        self.plot_steps = plot_steps
 
-    @abstractmethod
-    def calculate(self):
-        pass
+        self.clusters = [[] for _ in range(self.K)]
 
-
-class Euclidean(Distance):
-
-    def fit(self, x):
-        pass
-
-    def calculate(self, j, i):
-        """
-        Distancia euclidiana dos parametros
-        :param i: set de atributos i
-        :param j: set de atributos j
-        :return:
-        """
-        sum = np.sum((i - j) ** 2, axis=1)
-        return np.sqrt(sum)
-
-
-class Mahalanobis1(Distance):
-
-    def __init__(self):
-        self.cov_matrix = None
-
-    def calculate(self, x, _x):
-        passo1 = (x - _x)
-        passo2 = self.cov_matrix
-        passo3 = (x - _x).T
-
-        return np.sqrt(np.diagonal(passo1 @ passo2 @ passo3))
-
-    def fit(self, x):
-        pinv = np.linalg.pinv(np.cov(x, rowvar=False))
-        self.cov_matrix = pinv
-
-
-class Kmeans(model.Model):
-
-    def predict_train(self, x, weights):
-        pass
-
-    def initial_weights(self, x):
-        pass
-
-    def __init__(self, k=3, distance='Euclidean', normalization=None, metrics='F1'):
-
-        if distance == 'Euclidean':
+        self.centroids = []
+        if distance == 'euclidean':
             self.distance = Euclidean()
-        elif distance == 'Mahalanobis':
-            self.distance = Mahalanobis1()
+        elif distance == 'mahalanobis':
+            self.distance = Mahalanobis()
 
-        self.y = None
-        self.x = None
-        self.k = k
-        self.normalization = normalization
-        self.x_scaler = MinMaxScaler()
-        self.y_scaler = MinMaxScaler()
-        self.metrics = get_classification_metrics(metrics)
+    def predict(self, X):
+        self.X = X
+        self.n_samples, self.n_features = X.shape
 
-    def fit(self, x, y, training=None):
-        self.y = y
-        self.x = self.x_scaler.fit(x).transform(x)
-        self.distance.fit(self.x)
+        self.distance.fit(self.X)
 
-    def predict(self, x_test):
-        prediction = []
-        x_test = self.x_scaler.transform(x_test)
-        for xi in x_test:
-            distances = self.distance.calculate(self.x, xi)
-            closest_ks = distances.argsort()[:self.k]
-            k_classes = self.y[closest_ks]
-            prediction.append(np.bincount(k_classes.astype(int)).argmax())
+        random_sample_idxs = np.random.choice(self.n_samples, self.K, replace=False)
+        self.centroids = [self.X[idx] for idx in random_sample_idxs]
 
-        return prediction
+        for _ in range(self.max_iters):
+
+            self.clusters = self._create_clusters(self.centroids)
+
+            if self.plot_steps:
+                self.plot()
+
+            centroids_old = self.centroids
+            self.centroids = self._get_centroids(self.clusters)
+
+            if self._is_converged(centroids_old, self.centroids):
+                break
+
+            if self.plot_steps:
+                self.plot()
+
+        return self._get_cluster_labels(self.clusters)
+
+    def _get_cluster_labels(self, clusters):
+        # each sample will get the label of the cluster it was assigned to
+        labels = np.empty(self.n_samples)
+
+        for cluster_idx, cluster in enumerate(clusters):
+            for sample_index in cluster:
+                labels[sample_index] = cluster_idx
+        return labels
+
+    def _create_clusters(self, centroids):
+
+        clusters = [[] for _ in range(self.K)]
+        for idx, sample in enumerate(self.X):
+            centroid_idx = self._closest_centroid(sample, centroids)
+            clusters[centroid_idx].append(idx)
+        return clusters
+
+    def _closest_centroid(self, sample, centroids):
+
+        distances = [self.distance.calculate(sample, point) for point in centroids]
+        closest_index = np.argmin(distances)
+        return closest_index
+
+    def _get_centroids(self, clusters):
+
+        centroids = np.zeros((self.K, self.n_features))
+        for cluster_idx, cluster in enumerate(clusters):
+            cluster_mean = np.mean(self.X[cluster], axis=0)
+            centroids[cluster_idx] = cluster_mean
+        return centroids
+
+    def _is_converged(self, centroids_old, centroids):
+
+        distances = [
+            self.distance.calculate(centroids_old[i], centroids[i]) for i in range(self.K)
+        ]
+        return sum(distances) == 0
+
+    def plot(self):
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        for i, index in enumerate(self.clusters):
+            point = self.X[index].T
+            ax.scatter(*point)
+
+        for point in self.centroids:
+            ax.scatter(*point, marker="x", color="black", linewidth=2)
+
+        plt.title(f"Cluster with K-{self.K}")
+        plt.show()
+
+
+if __name__ == '__main__':
+    X = np.genfromtxt('../../Lista6/quake.csv', delimiter=',')
+
+    kmeans = KMeans(plot_steps=True)
+    kmeans.predict(X)
